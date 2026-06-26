@@ -38,6 +38,7 @@ import {
   seedFor,
   HORIZON_DAYS,
 } from "./simulations";
+import { runForecast } from "./forecast";
 import { computeQuantSupportScore, verdictFromScore } from "./scoring";
 import {
   buildEvidence,
@@ -55,6 +56,9 @@ import type {
   TimelineEvent,
   NormalizedPoint,
   DrawdownPoint,
+  PriceSummary,
+  InstrumentPriceSummary,
+  ForwardForecast,
 } from "./types";
 
 const NUM_PATHS = 10000;
@@ -208,6 +212,18 @@ export async function runStressTest(
     tailRiskEndingPrice: round2(tickerParams.startPrice * (1 + tickerSim.percentile1)),
   };
 
+  // 6b. Multi-model ensemble forecast (GBM, Student-t, GARCH, jump-diffusion,
+  // bootstrap) over the same horizon.
+  const forecastRaw = runForecast(
+    tickerLog,
+    tickerParams.startPrice,
+    benchLog,
+    benchParams.startPrice,
+    horizonDays,
+    seedFor(`${req.ticker}|${req.horizon}|forecast`) >>> 0,
+  );
+  const forecast = roundForecast(forecastRaw);
+
   // 7. Quant Support Score (transparent weighted formula).
   const quantSupportScore = computeQuantSupportScore(metrics, simulations, regime);
   const verdictLabel = verdictFromScore(quantSupportScore.score);
@@ -236,8 +252,12 @@ export async function runStressTest(
     deterministicSummary,
   );
 
-  // 10. Series for charts.
+  // 10. Series for charts + actual-price summary (so users can verify the data).
   const normalizedSeries = buildNormalizedSeries(dates, tickerCloses, benchCloses);
+  const priceSummary: PriceSummary = {
+    ticker: summarizePrices(req.ticker, dates, tickerCloses),
+    benchmark: summarizePrices(req.benchmark, dates, benchCloses),
+  };
   const drawdownSeries: DrawdownPoint[] = dates.map((date, i) => ({
     date,
     drawdown: round4(drawdown.series[i] ?? 0),
@@ -278,6 +298,8 @@ export async function runStressTest(
       longRunRealizedVolatility: round4(regime.longRunRealizedVolatility),
     },
     simulations: roundSimulations(simulations),
+    forecast,
+    priceSummary,
     quantSupportScore,
     evidenceFor,
     evidenceAgainst,
@@ -302,7 +324,28 @@ function buildNormalizedSeries(
     date,
     ticker: round2((tickerCloses[i] / t0) * 100),
     benchmark: round2((benchCloses[i] / b0) * 100),
+    tickerClose: round2(tickerCloses[i]),
+    benchmarkClose: round2(benchCloses[i]),
   }));
+}
+
+function summarizePrices(
+  symbol: string,
+  dates: string[],
+  closes: number[],
+): InstrumentPriceSummary {
+  const last = closes[closes.length - 1];
+  const start = closes[0];
+  return {
+    symbol,
+    lastClose: round2(last),
+    lastDate: dates[dates.length - 1],
+    startClose: round2(start),
+    startDate: dates[0],
+    periodHigh: round2(Math.max(...closes)),
+    periodLow: round2(Math.min(...closes)),
+    periodReturn: round4(last / start - 1),
+  };
 }
 
 function buildTimeline(req: StressTestRequest, generatedAt: string): TimelineEvent[] {
@@ -336,6 +379,36 @@ function roundMetrics(m: Metrics): Metrics {
   });
   return out;
 }
+function roundForecast(f: ForwardForecast): ForwardForecast {
+  return {
+    ...f,
+    startPrice: round2(f.startPrice),
+    expectedReturn: round4(f.expectedReturn),
+    medianReturn: round4(f.medianReturn),
+    percentile5: round4(f.percentile5),
+    percentile25: round4(f.percentile25),
+    percentile50: round4(f.percentile50),
+    percentile75: round4(f.percentile75),
+    percentile95: round4(f.percentile95),
+    probabilityPositive: round4(f.probabilityPositive),
+    probabilityOutperformBenchmark: round4(f.probabilityOutperformBenchmark),
+    expectedPrice: round2(f.expectedPrice),
+    lowPrice: round2(f.lowPrice),
+    highPrice: round2(f.highPrice),
+    modelAgreement: round4(f.modelAgreement),
+    models: f.models.map((m) => ({
+      ...m,
+      expectedReturn: round4(m.expectedReturn),
+      medianReturn: round4(m.medianReturn),
+      percentile5: round4(m.percentile5),
+      percentile95: round4(m.percentile95),
+      probabilityPositive: round4(m.probabilityPositive),
+      expectedPrice: round2(m.expectedPrice),
+      annualizedVolForecast: round4(m.annualizedVolForecast),
+    })),
+  };
+}
+
 function roundSimulations(s: Simulations): Simulations {
   return {
     ...s,

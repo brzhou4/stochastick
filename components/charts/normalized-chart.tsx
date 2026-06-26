@@ -12,6 +12,38 @@ import {
 } from "recharts";
 import type { NormalizedPoint } from "@/lib/quant/types";
 
+function PriceTooltip({
+  active,
+  payload,
+  label,
+  ticker,
+  benchmark,
+}: {
+  active?: boolean;
+  payload?: Array<{ payload: NormalizedPoint }>;
+  label?: string;
+  ticker: string;
+  benchmark: string;
+}) {
+  if (!active || !payload || payload.length === 0) return null;
+  const p = payload[0].payload;
+  return (
+    <div className="rounded-xl border border-white/10 bg-[rgba(10,12,17,0.96)] px-3 py-2 text-xs">
+      <div className="mb-1 text-muted-foreground">{label}</div>
+      <div className="tabular flex items-center justify-between gap-4">
+        <span className="text-emerald-300">{ticker}</span>
+        <span className="text-foreground">${p.tickerClose.toFixed(2)}</span>
+        <span className="text-muted-foreground">idx {p.ticker.toFixed(1)}</span>
+      </div>
+      <div className="tabular flex items-center justify-between gap-4">
+        <span className="text-slate-300">{benchmark}</span>
+        <span className="text-foreground">${p.benchmarkClose.toFixed(2)}</span>
+        <span className="text-muted-foreground">idx {p.benchmark.toFixed(1)}</span>
+      </div>
+    </div>
+  );
+}
+
 export function NormalizedChart({
   data,
   ticker,
@@ -52,15 +84,7 @@ export function NormalizedChart({
           domain={["auto", "auto"]}
           width={48}
         />
-        <Tooltip
-          contentStyle={{
-            background: "rgba(10,12,17,0.95)",
-            border: "1px solid rgba(255,255,255,0.1)",
-            borderRadius: 12,
-            fontSize: 12,
-          }}
-          labelStyle={{ color: "#94a3b8" }}
-        />
+        <Tooltip content={<PriceTooltip ticker={ticker} benchmark={benchmark} />} />
         <Legend wrapperStyle={{ fontSize: 12 }} />
         <Area
           type="monotone"

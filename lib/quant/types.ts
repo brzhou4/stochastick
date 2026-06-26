@@ -1,6 +1,9 @@
 // Shared types for the ThesisBreak quant engine and the /api/stress-test contract.
 // These types are imported by both the backend route and the frontend report UI.
 
+import type { ForwardForecast } from "./forecast";
+export type { ForwardForecast, ModelForecast } from "./forecast";
+
 export type Horizon = "1 Week" | "1 Month" | "1 Quarter" | "1 Year";
 
 export type RiskStyle =
@@ -104,8 +107,26 @@ export interface TimelineEvent {
 
 export interface NormalizedPoint {
   date: string;
-  ticker: number;
-  benchmark: number;
+  ticker: number; // indexed to 100 at the start of the window
+  benchmark: number; // indexed to 100 at the start of the window
+  tickerClose: number; // actual adjusted close in dollars
+  benchmarkClose: number; // actual adjusted close in dollars
+}
+
+export interface InstrumentPriceSummary {
+  symbol: string;
+  lastClose: number;
+  lastDate: string;
+  startClose: number;
+  startDate: string;
+  periodHigh: number;
+  periodLow: number;
+  periodReturn: number; // (last/start - 1) over the window
+}
+
+export interface PriceSummary {
+  ticker: InstrumentPriceSummary;
+  benchmark: InstrumentPriceSummary;
 }
 
 export interface DrawdownPoint {
@@ -132,6 +153,8 @@ export interface StressTestResponse {
   metrics: Metrics;
   volatilityRegime: VolatilityRegime;
   simulations: Simulations;
+  forecast: ForwardForecast;
+  priceSummary: PriceSummary;
   quantSupportScore: QuantSupportScore;
   evidenceFor: string[];
   evidenceAgainst: string[];

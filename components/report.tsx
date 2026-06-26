@@ -5,11 +5,13 @@ import {
   Activity,
   AlertTriangle,
   ArrowLeft,
+  Brain,
   CheckCircle2,
   Database,
   FileText,
   Gauge,
   Info,
+  Layers,
   ShieldAlert,
   Sparkles,
   ThumbsDown,
@@ -42,6 +44,8 @@ export function Report({
 }) {
   const m = data.metrics;
   const s = data.simulations;
+  const pt = data.priceSummary.ticker;
+  const pb = data.priceSummary.benchmark;
 
   return (
     <motion.div
@@ -55,11 +59,34 @@ export function Report({
         <CardContent className="pt-6">
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
+              <div className="flex flex-wrap items-center gap-3">
                 <h1 className="tabular text-3xl font-bold tracking-tight">{data.ticker}</h1>
+                <span className="tabular text-2xl font-semibold text-emerald-300">
+                  {formatPrice(pt.lastClose)}
+                </span>
                 <span className="text-muted-foreground">vs</span>
-                <span className="tabular text-xl text-muted-foreground">{data.benchmark}</span>
+                <span className="tabular text-xl text-muted-foreground">
+                  {data.benchmark} {formatPrice(pb.lastClose)}
+                </span>
                 <VerdictBadge label={data.verdict.label} />
+              </div>
+              <div className="tabular flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground">
+                <span>
+                  {data.ticker} close on {pt.lastDate}:{" "}
+                  <span className="text-foreground/80">{formatPrice(pt.lastClose)}</span>
+                </span>
+                <span>
+                  2y range{" "}
+                  <span className="text-foreground/80">
+                    {formatPrice(pt.periodLow)}–{formatPrice(pt.periodHigh)}
+                  </span>
+                </span>
+                <span>
+                  period return{" "}
+                  <span className={pt.periodReturn >= 0 ? "text-emerald-300" : "text-rose-300"}>
+                    {formatPercent(pt.periodReturn)}
+                  </span>
+                </span>
               </div>
               <p className="max-w-2xl text-pretty text-sm leading-relaxed text-muted-foreground">
                 <span className="text-foreground/80">Thesis: </span>“{data.thesis}”
@@ -291,11 +318,18 @@ export function Report({
         </CardContent>
       </Card>
 
+      {/* Forward predictions — multi-model ensemble */}
+      <ForecastSection data={data} />
+
       {/* Charts */}
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>
             <CardTitle className="text-base">Normalized price vs benchmark (start = 100)</CardTitle>
+            <p className="text-xs text-muted-foreground">
+              Both indexed to 100 at the window start for comparison — hover any point for the real
+              dollar close.
+            </p>
           </CardHeader>
           <CardContent>
             <NormalizedChart
@@ -431,6 +465,170 @@ export function Report({
         </p>
       </div>
     </motion.div>
+  );
+}
+
+function ForecastSection({ data }: { data: StressTestResponse }) {
+  const f = data.forecast;
+  // Map the 5th–95th percentile band onto a 0-100% bar; place median + expected.
+  const lo = f.percentile5;
+  const hi = f.percentile95;
+  const span = hi - lo || 1;
+  const posOf = (x: number) => Math.max(0, Math.min(100, ((x - lo) / span) * 100));
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Brain className="h-4 w-4 text-emerald-300" />
+          Forward predictions — {f.models.length}-model ensemble
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          {f.totalPaths.toLocaleString()} simulated paths over {data.horizon.toLowerCase()} ·
+          probability-weighted distribution, not a single price target.
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-6">
+        {/* Ensemble headline */}
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <BentoLikeStat
+            label="Expected price"
+            value={formatPrice(f.expectedPrice)}
+            sub={`from ${formatPrice(f.startPrice)} (${formatPercent(f.expectedReturn)})`}
+            accent="emerald"
+          />
+          <BentoLikeStat
+            label="90% range"
+            value={`${formatPrice(f.lowPrice)} – ${formatPrice(f.highPrice)}`}
+            sub={`${formatPercent(f.percentile5)} to ${formatPercent(f.percentile95)}`}
+            accent="slate"
+          />
+          <BentoLikeStat
+            label="P(positive)"
+            value={formatPercent(f.probabilityPositive)}
+            sub={`median ${formatPercent(f.medianReturn)}`}
+            accent="sky"
+          />
+          <BentoLikeStat
+            label="P(beat benchmark)"
+            value={formatPercent(f.probabilityOutperformBenchmark)}
+            sub={`model agreement ${formatPercent(f.modelAgreement)}`}
+            accent="amber"
+          />
+        </div>
+
+        {/* Distribution band */}
+        <div>
+          <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+            <span>Bear · {formatPercent(f.percentile5)}</span>
+            <span>Ensemble forward return distribution</span>
+            <span>Bull · {formatPercent(f.percentile95)}</span>
+          </div>
+          <div className="relative h-3 w-full rounded-full bg-gradient-to-r from-rose-500/40 via-white/10 to-emerald-500/40">
+            <Marker pos={posOf(f.percentile25)} label="25th" />
+            <Marker pos={posOf(f.percentile50)} label="median" strong />
+            <Marker pos={posOf(f.percentile75)} label="75th" />
+          </div>
+          <div className="mt-6 flex justify-between text-[11px] text-muted-foreground">
+            <span className="tabular">{formatPrice(f.lowPrice)}</span>
+            <span className="tabular">{formatPrice(f.expectedPrice)} expected</span>
+            <span className="tabular">{formatPrice(f.highPrice)}</span>
+          </div>
+        </div>
+
+        {/* Per-model table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-white/10 text-left text-xs text-muted-foreground">
+                <th className="py-2 pr-3 font-medium">Model</th>
+                <th className="py-2 pr-3 font-medium">Pedigree</th>
+                <th className="py-2 pr-3 text-right font-medium">Exp. return</th>
+                <th className="py-2 pr-3 text-right font-medium">Vol forecast</th>
+                <th className="py-2 text-right font-medium">P(up)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {f.models.map((m) => (
+                <tr key={m.name} className="border-b border-white/5">
+                  <td className="py-2 pr-3">
+                    <div className="font-medium text-foreground/90">{m.name}</div>
+                    <div className="text-xs text-muted-foreground">{m.kind}</div>
+                  </td>
+                  <td className="py-2 pr-3 text-xs text-muted-foreground">{m.author}</td>
+                  <td
+                    className={cn(
+                      "tabular py-2 pr-3 text-right",
+                      m.expectedReturn >= 0 ? "text-emerald-300" : "text-rose-300",
+                    )}
+                  >
+                    {formatPercent(m.expectedReturn)}
+                  </td>
+                  <td className="tabular py-2 pr-3 text-right text-muted-foreground">
+                    {formatPercent(m.annualizedVolForecast)}
+                  </td>
+                  <td className="tabular py-2 text-right text-muted-foreground">
+                    {formatPercent(m.probabilityPositive)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        <div className="flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3 text-xs text-muted-foreground">
+          <Layers className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
+          {f.disclaimer}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function Marker({ pos, label, strong }: { pos: number; label: string; strong?: boolean }) {
+  return (
+    <div className="absolute -top-0.5 flex flex-col items-center" style={{ left: `${pos}%` }}>
+      <div
+        className={cn(
+          "h-4 w-0.5 -translate-x-1/2 rounded",
+          strong ? "bg-emerald-300" : "bg-white/50",
+        )}
+      />
+      <span
+        className={cn(
+          "mt-1 -translate-x-1/2 whitespace-nowrap text-[10px]",
+          strong ? "text-emerald-300" : "text-muted-foreground",
+        )}
+      >
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function BentoLikeStat({
+  label,
+  value,
+  sub,
+  accent,
+}: {
+  label: string;
+  value: string;
+  sub: string;
+  accent: "emerald" | "slate" | "sky" | "amber";
+}) {
+  const ring = {
+    emerald: "border-emerald-400/25",
+    slate: "border-white/10",
+    sky: "border-sky-400/25",
+    amber: "border-amber-400/25",
+  }[accent];
+  return (
+    <div className={cn("rounded-xl border bg-white/[0.03] p-4", ring)}>
+      <p className="text-xs text-muted-foreground">{label}</p>
+      <p className="tabular mt-1 text-lg font-semibold text-foreground">{value}</p>
+      <p className="mt-0.5 text-xs text-muted-foreground">{sub}</p>
+    </div>
   );
 }
 
