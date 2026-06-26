@@ -64,7 +64,7 @@ describe("POST /api/stress-test", () => {
     expect(json.simulations.probabilityOutperformBenchmark).toBeLessThanOrEqual(1);
 
     // Multi-model forecast present and well-formed.
-    expect(json.forecast.models.length).toBe(5);
+    expect(json.forecast.models.length).toBe(8);
     expect(json.forecast.percentile5).toBeLessThanOrEqual(json.forecast.percentile50);
     expect(json.forecast.percentile50).toBeLessThanOrEqual(json.forecast.percentile95);
     expect(json.forecast.probabilityOutperformBenchmark).toBeGreaterThanOrEqual(0);

@@ -47,17 +47,20 @@ The **Quant Support Score (0–100)** is a fixed, fully transparent weighted for
 
 ## Forward forecasting (multi-model ensemble)
 
-Rather than predict a single price, ThesisBreak estimates the **distribution** of forward outcomes using five established models, then pools them (`lib/quant/forecast.ts`):
+Rather than predict a single price, ThesisBreak estimates the **distribution** of forward outcomes using eight established models spanning stochastic calculus, time-series econometrics and machine learning, then pools them into an ensemble (`lib/quant/forecast.ts`):
 
-| Model | Pedigree | Captures |
-|---|---|---|
-| Geometric Brownian Motion | Black–Scholes–Merton | Lognormal baseline, constant vol |
-| Student-t Monte Carlo | Gosset ("Student") | Fat tails (df calibrated to sample kurtosis) |
-| GARCH(1,1) | Engle & Bollerslev | Volatility clustering / mean reversion; forecast starts from current conditional vol |
-| Merton Jump-Diffusion | Robert Merton | Poisson jumps for crashes/gaps |
-| Historical bootstrap | Efron | Real return distribution, no parametric assumption |
+| Model | Family | Pedigree | Captures |
+|---|---|---|---|
+| Geometric Brownian Motion | Stochastic calculus (SDE) | Black–Scholes–Merton | Lognormal baseline, constant vol |
+| Student-t Monte Carlo | Fat-tailed diffusion | Gosset ("Student") | Fat tails (df calibrated to sample kurtosis) |
+| GARCH(1,1) | Stochastic volatility | Engle & Bollerslev | Vol clustering; starts from current conditional vol |
+| Merton Jump-Diffusion | Jump SDE | Robert Merton | Poisson jumps for crashes/gaps |
+| Ornstein–Uhlenbeck (Vasicek) | Mean-reverting SDE (Itô) | Uhlenbeck–Ornstein | Mean reversion of detrended log price |
+| ARIMA / ARMA | Time-series | Box & Jenkins | Return autocorrelation (Hannan–Rissanen fit) |
+| Neural network (MLP) | Machine learning | Backprop (Rumelhart et al.) | Nonlinear structure; trained by gradient descent |
+| Historical bootstrap | Non-parametric | Efron | Real return distribution, no assumptions |
 
-The ensemble reports expected/median price, a 5–95% range, P(positive), P(beat benchmark), and cross-model agreement — all deterministically seeded. These are **model-conditioned distributions, not predictions of the actual future price.**
+The ARIMA fit, GARCH MLE, OU calibration and the MLP's weights are all computed from the data; the neural net is a real 5-lag → 8-unit tanh network trained with backpropagation (pure TypeScript, no ML dependency). The ensemble reports expected/median price, a 5–95% range, P(positive), P(beat benchmark), and cross-model agreement — all deterministically seeded. These are **model-conditioned distributions, not predictions of the actual future price.**
 
 ## Compliance
 

@@ -216,9 +216,9 @@ export async function runStressTest(
   // bootstrap) over the same horizon.
   const forecastRaw = runForecast(
     tickerLog,
-    tickerParams.startPrice,
+    tickerCloses,
     benchLog,
-    benchParams.startPrice,
+    benchCloses,
     horizonDays,
     seedFor(`${req.ticker}|${req.horizon}|forecast`) >>> 0,
   );
