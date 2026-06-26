@@ -14,14 +14,14 @@ const config: Config = {
         mono: ["var(--font-mono)", "ui-monospace", "SFMono-Regular", "monospace"],
       },
       colors: {
-        ink: {
-          950: "#06070a",
-          900: "#0a0c11",
-          850: "#0e1118",
-          800: "#12151d",
-          700: "#1a1f2b",
-          600: "#272d3d",
+        background: "hsl(var(--background))",
+        foreground: "hsl(var(--foreground))",
+        border: "hsl(var(--border))",
+        surface: {
+          DEFAULT: "hsl(var(--surface))",
+          2: "hsl(var(--surface-2))",
         },
+        "muted-foreground": "hsl(var(--muted-foreground))",
       },
       keyframes: {
         "background-gradient": {

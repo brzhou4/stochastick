@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { Activity, AlertCircle, BarChart3, ShieldCheck } from "lucide-react";
-import { AnimatedGradient } from "@/components/ui/animated-gradient-with-svg";
 import { MissionForm } from "@/components/mission-form";
 import { MissionProgress } from "@/components/mission-progress";
 import { Report } from "@/components/report";
@@ -59,44 +58,36 @@ export default function Home() {
 
   return (
     <main className="bg-grid relative min-h-screen">
-      {/* Ambient backdrop */}
-      <div className="pointer-events-none fixed inset-0 -z-10 opacity-50">
-        <AnimatedGradient colors={["#0d3b2e", "#0b2540", "#1a103d"]} speed={0.05} blur="heavy" />
-      </div>
-      <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-64 bg-gradient-to-b from-emerald-500/5 to-transparent" />
+      {/* Static vignette — no animated gradients. */}
+      <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
         {/* Brand bar */}
-        <div className="mb-12 flex items-center justify-between">
+        <div className="mb-14 flex items-center justify-between border-b pb-5">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-400/15 text-emerald-300">
-              <Activity className="h-5 w-5" />
+            <div className="panel-2 flex h-8 w-8 items-center justify-center rounded-md text-emerald-400">
+              <Activity className="h-4 w-4" />
             </div>
-            <span className="text-lg font-semibold tracking-tight">
+            <span className="text-[15px] font-semibold tracking-tight">
               Stochas<span className="text-emerald-400">tick</span>
             </span>
           </div>
-          <span className="hidden text-xs text-muted-foreground sm:block">
-            Autonomous Quant Research Worker
-          </span>
+          <span className="label hidden sm:block">Autonomous Quant Research Worker</span>
         </div>
 
         {phase === "idle" ? (
           <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
             <motion.div
-              initial={{ opacity: 0, y: 16 }}
+              initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.6 }}
+              transition={{ duration: 0.45 }}
             >
-              <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs text-muted-foreground">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-                Agents for Hire · Workflow &amp; Operations
+              <div className="label mb-5 inline-flex items-center gap-2 border-b pb-1">
+                Investment Thesis Stress-Test
               </div>
-              <h1 className="text-balance text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
+              <h1 className="text-balance text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl">
                 Stress-test an investment thesis{" "}
-                <span className="bg-gradient-to-r from-emerald-300 to-sky-400 bg-clip-text text-transparent">
-                  before the market does.
-                </span>
+                <span className="text-emerald-400">before the market does.</span>
               </h1>
               <p className="mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground">
                 Stochastick is an autonomous quant research worker you hire for one job: testing your

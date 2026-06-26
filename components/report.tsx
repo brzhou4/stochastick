@@ -471,7 +471,7 @@ export function Report({
       </Card>
 
       {/* Compliance footer */}
-      <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6 text-xs leading-relaxed text-muted-foreground">
+      <div className="rounded-lg border border-white/10 bg-white/[0.02] p-6 text-xs leading-relaxed text-muted-foreground">
         <p className="mb-2 font-medium text-foreground/70">Compliance</p>
         <p>
           Research output only. Not financial advice. No trade execution. Historical performance does

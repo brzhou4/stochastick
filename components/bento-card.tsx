@@ -1,17 +1,40 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { AnimatedGradient } from "@/components/ui/animated-gradient-with-svg";
 import { cn } from "@/lib/utils";
+
+type Accent = "neutral" | "positive" | "warning" | "negative" | "blue";
 
 interface BentoCardProps {
   title: string;
   value: string;
   subtitle?: string;
-  colors: string[];
+  /** Kept for backwards-compat; mapped to a restrained accent rule. */
+  colors?: string[];
+  accent?: Accent;
   delay?: number;
   className?: string;
   footer?: React.ReactNode;
+}
+
+const ACCENT_RULE: Record<Accent, string> = {
+  neutral: "bg-white/15",
+  positive: "bg-emerald-400/70",
+  warning: "bg-amber-400/70",
+  negative: "bg-rose-400/70",
+  blue: "bg-sky-400/70",
+};
+
+// Infer a sober accent from the legacy `colors` prop so callers don't change.
+function inferAccent(colors?: string[], explicit?: Accent): Accent {
+  if (explicit) return explicit;
+  const first = (colors?.[0] ?? "").toLowerCase();
+  if (first.includes("f43f5e") || first.includes("e11d48")) return "negative";
+  if (first.includes("f59e0b") || first.includes("fbbf24")) return "warning";
+  if (first.includes("22d3ee") || first.includes("0ea5e9") || first.includes("6366f1"))
+    return "blue";
+  if (first.includes("34d399") || first.includes("10b981")) return "positive";
+  return "neutral";
 }
 
 export function BentoCard({
@@ -19,32 +42,33 @@ export function BentoCard({
   value,
   subtitle,
   colors,
+  accent,
   delay = 0,
   className,
   footer,
 }: BentoCardProps) {
+  const a = inferAccent(colors, accent);
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
+      initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5, delay, ease: [0.22, 1, 0.36, 1] }}
+      transition={{ duration: 0.35, delay, ease: "easeOut" }}
       className={cn(
-        "relative overflow-hidden rounded-2xl border border-white/10 p-5",
+        "panel relative overflow-hidden rounded-lg p-4",
         className,
       )}
     >
-      <AnimatedGradient colors={colors} speed={0.08} blur="medium" />
-      <div className="relative z-10 flex h-full flex-col justify-between">
-        <p className="text-xs font-medium uppercase tracking-wider text-white/60">
-          {title}
-        </p>
-        <div className="mt-3">
-          <p className="tabular text-3xl font-semibold text-white">{value}</p>
+      {/* thin accent rule along the top edge */}
+      <div className={cn("absolute inset-x-0 top-0 h-px", ACCENT_RULE[a])} />
+      <div className="flex h-full flex-col justify-between gap-3">
+        <p className="label">{title}</p>
+        <div>
+          <p className="tabular text-2xl font-medium text-foreground">{value}</p>
           {subtitle ? (
-            <p className="mt-1 text-sm text-white/65">{subtitle}</p>
+            <p className="mt-1 text-xs leading-snug text-muted-foreground">{subtitle}</p>
           ) : null}
         </div>
-        {footer ? <div className="mt-3 text-xs text-white/60">{footer}</div> : null}
+        {footer ? <div className="mt-1 text-xs text-muted-foreground">{footer}</div> : null}
       </div>
     </motion.div>
   );

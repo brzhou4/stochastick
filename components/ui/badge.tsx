@@ -16,7 +16,7 @@ export function Badge({
   return (
     <span
       className={cn(
-        "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium",
+        "inline-flex items-center gap-1.5 rounded border px-2 py-0.5 text-xs font-medium",
         className,
       )}
       {...props}
@@ -26,11 +26,8 @@ export function Badge({
 
 export function VerdictBadge({ label }: { label: VerdictLabel }) {
   return (
-    <Badge className={cn("text-sm px-3 py-1.5 font-semibold", VERDICT_STYLES[label])}>
-      <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-current opacity-50" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-current" />
-      </span>
+    <Badge className={cn("rounded-md px-2.5 py-1 text-sm font-medium", VERDICT_STYLES[label])}>
+      <span className="inline-flex h-1.5 w-1.5 rounded-full bg-current" />
       {label}
     </Badge>
   );

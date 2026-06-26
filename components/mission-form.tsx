@@ -64,7 +64,7 @@ export function MissionForm({ onLaunch, disabled }: MissionFormProps) {
       initial={{ opacity: 0, y: 16 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
-      className="glass relative overflow-hidden rounded-3xl p-7 sm:p-9"
+      className="glass relative overflow-hidden rounded-lg p-7 sm:p-9"
     >
       <div className="mb-7 flex items-center gap-3">
         <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300">
@@ -152,7 +152,7 @@ export function MissionForm({ onLaunch, disabled }: MissionFormProps) {
               className={cn(fieldClass(), "h-[calc(100%-0px)] cursor-pointer appearance-none")}
             >
               {RISK_STYLES.map((r) => (
-                <option key={r} value={r} className="bg-ink-900">
+                <option key={r} value={r} className="bg-[#0f1115]">
                   {r}
                 </option>
               ))}

@@ -94,7 +94,7 @@ export function MissionProgress({
       animate={{ opacity: 1, y: 0 }}
       className="grid grid-cols-1 gap-5 lg:grid-cols-5"
     >
-      <div className="glass rounded-3xl p-7 lg:col-span-3">
+      <div className="glass rounded-lg p-7 lg:col-span-3">
         <div className="mb-6 flex items-center gap-3">
           <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-400/15 text-emerald-300">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -159,7 +159,7 @@ export function MissionProgress({
         </div>
       </div>
 
-      <div className="glass rounded-3xl p-6 lg:col-span-2">
+      <div className="glass rounded-lg p-6 lg:col-span-2">
         <div className="mb-4 flex items-center gap-2 text-sm font-medium text-muted-foreground">
           <Terminal className="h-4 w-4" />
           Mission log

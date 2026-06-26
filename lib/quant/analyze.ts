@@ -79,7 +79,9 @@ function classifyRegime(
   const recentSlice = tickerLog.slice(-RECENT_WINDOW);
   const recent =
     standardDeviation(recentSlice) * Math.sqrt(TRADING_DAYS_PER_YEAR);
-  const longRun = annualizedVolatility(tickerLog);
+  // Long-run baseline = trailing 252 trading days (1 year), per methodology.
+  const longSlice = tickerLog.slice(-TRADING_DAYS_PER_YEAR);
+  const longRun = annualizedVolatility(longSlice);
   const ratio = longRun > 0 ? recent / longRun : 1;
 
   let label: VolatilityRegimeLabel;
