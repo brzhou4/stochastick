@@ -1,8 +1,10 @@
-# ThesisBreak
+# Stochastick
 
 **An autonomous quant research worker that stress-tests an investment thesis before the market does.**
 
-Built for *Agents for Hire* — Workflow & Operations Agents track. You assign the work, the AI performs the work, you review the completed work. This is not a chatbot for stocks; it is a single, focused quantitative research analyst you hire for one job: **the Investment Thesis Stress-Test Mission.**
+Built for *Agents for Hire* — Workflow & Operations Agents track. You assign the work, the AI performs the work, you review the completed work. This is not a chatbot for stocks; it is a single, focused quantitative research analyst you hire for one job: **the Investment Thesis Stress-Test Mission.** It does in seconds what a junior analyst bills hours for.
+
+**Marketplace-ready:** ships with a `Dockerfile` and Next.js standalone output for one-command deployment on AgentBox, and uses GMI Cloud's single-key, 200+-model API for its interpretation layer.
 
 Give it a ticker, a benchmark, a thesis, a horizon, and a risk style. It tries to *prove the thesis wrong* using quantitative evidence and returns an institutional-style research memo: real computed metrics, a 10,000-path stochastic simulation, risk analysis, evidence for and against, and a verdict.
 
@@ -22,6 +24,17 @@ npm run typecheck   # tsc --noEmit
 npm test            # vitest (quant engine + API integration)
 ```
 
+## Deploy (AgentBox / Docker)
+
+```bash
+docker build -t stochastick .
+docker run -p 3000:3000 --env-file .env stochastick
+```
+
+The app builds to a Next.js **standalone** server (`output: "standalone"`), so the
+image is small and has zero idle cost — list it on AgentBox and it's hireable the
+moment you publish. No database, no login, no paid market-data dependency.
+
 ## How it works
 
 ```
@@ -37,7 +50,7 @@ app/page.tsx ──▶ POST /api/stress-test ──▶ lib/quant/analyze.ts
 - **Math never lives in React.** Every metric is computed in `/lib/quant/*` from daily price data.
 - **Deterministic everywhere.** Simulations and fallback data use seeded PRNGs, so the demo and tests are stable.
 - **Data is honest.** Live data is fetched in priority order: **Twelve Data** (free keyed API, recommended), then **Yahoo Finance** (anonymous, with cookie+crumb fallback), then **Stooq** CSV. The anonymous sources get IP-rate-limited on shared/corporate/VPN networks, so set `TWELVE_DATA_API_KEY` (free, no card — https://twelvedata.com) for reliable live data. If every source fails, the worker uses clearly-labelled deterministic fallback data for NVDA, TSLA, AAPL, MSFT, AMD, SPY (`dataStatus: "fallback"`). It never passes fake data off as live.
-- **The LLM only writes prose.** If `GMI_API_KEY` / `GMI_BASE_URL` / `GMI_MODEL` are set, a GMI-compatible endpoint re-phrases the memo summary (with a hard timeout and forbidden-word guard). It never touches the numbers or the verdict. With no env vars, the deterministic memo is used.
+- **The LLM interprets, the math decides.** If `GMI_API_KEY` / `GMI_BASE_URL` / `GMI_MODEL` are set (any OpenAI-compatible endpoint, e.g. OpenRouter), the LLM decomposes the thesis into testable claims, assesses each against the quantitative evidence (`Supported` / `Unsupported` / `Inconclusive` — it marks fundamentals it can't verify from price data as `Inconclusive`), writes the memo, and explains the verdict. It **never** computes a metric or changes the formula-driven verdict label, and a forbidden-word guard + hard timeout protect against bad output. With no env vars, a deterministic claim-by-claim analysis is used instead.
 
 ## What it computes
 

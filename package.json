@@ -1,8 +1,8 @@
 {
-  "name": "thesisbreak",
+  "name": "stochastick",
   "version": "1.0.0",
   "private": true,
-  "description": "ThesisBreak — an autonomous quant research worker that stress-tests investment theses.",
+  "description": "Stochastick — an autonomous quant research worker that stress-tests investment theses.",
   "scripts": {
     "dev": "next dev",
     "build": "next build",

@@ -10,6 +10,8 @@ import type {
   VerdictLabel,
   AssumptionCheck,
   StressTestRequest,
+  ThesisAnalysis,
+  ThesisDirection,
 } from "./types";
 
 function pct(x: number): string {
@@ -184,34 +186,122 @@ export function buildMethodology(req: StressTestRequest, dataPoints: number): st
   ];
 }
 
+// Deterministic thesis analysis: decompose the implied thesis into testable,
+// price-based claims and assess each from the metrics. Used as the fallback when
+// no LLM is configured (and as the schema the LLM is asked to fill).
+export function buildThesisAnalysis(
+  req: StressTestRequest,
+  metrics: Metrics,
+  simulations: Simulations,
+  regime: VolatilityRegime,
+  direction: ThesisDirection,
+  verdictSummaryText: string,
+): ThesisAnalysis {
+  const claims: ThesisAnalysis["claims"] = [];
+
+  if (direction.extremeClaim) {
+    // The thesis claims a near-total loss / "goes to zero".
+    claims.push({
+      claim: `${req.ticker} suffers a near-total loss over ${req.horizon.toLowerCase()}.`,
+      assessment: "Unsupported",
+      rationale: `The model assigns a vanishingly small probability to a 95%+ loss; even the simulated tail (1st-percentile) ending price is ${pct(simulations.percentile1)} return, nowhere near zero.`,
+    });
+  } else if (direction.stance === "bearish") {
+    // The thesis is that the stock falls / underperforms.
+    const stockIsWeak =
+      metrics.excessReturn < 0 && simulations.probabilityOutperformBenchmark < 0.5;
+    claims.push({
+      claim: `${req.ticker} declines or underperforms ${req.benchmark} over ${req.horizon.toLowerCase()} (as the thesis claims).`,
+      assessment: stockIsWeak
+        ? "Supported"
+        : metrics.excessReturn > 0 && simulations.probabilityOutperformBenchmark > 0.5
+          ? "Unsupported"
+          : "Inconclusive",
+      rationale: `Annualized excess return ${pct(metrics.excessReturn)} vs benchmark; simulated outperformance probability ${pct(simulations.probabilityOutperformBenchmark)} (a bearish thesis needs these to be weak).`,
+    });
+  } else {
+    const outperforms =
+      metrics.excessReturn > 0 && simulations.probabilityOutperformBenchmark > 0.5;
+    claims.push({
+      claim: `${req.ticker} outperforms ${req.benchmark} over ${req.horizon.toLowerCase()}.`,
+      assessment: outperforms
+        ? "Supported"
+        : metrics.excessReturn < 0 && simulations.probabilityOutperformBenchmark < 0.5
+          ? "Unsupported"
+          : "Inconclusive",
+      rationale: `Annualized excess return ${pct(metrics.excessReturn)} vs benchmark; simulated outperformance probability ${pct(simulations.probabilityOutperformBenchmark)}.`,
+    });
+  }
+
+  // Direction-agnostic facts about the stock's risk profile.
+  claims.push({
+    claim: "The stock's returns adequately compensate for the risk taken.",
+    assessment:
+      metrics.sharpeRatio >= 1
+        ? "Supported"
+        : metrics.sharpeRatio < 0
+          ? "Unsupported"
+          : "Inconclusive",
+    rationale: `Sharpe ${metrics.sharpeRatio.toFixed(2)}, Sortino ${metrics.sortinoRatio.toFixed(2)}, alpha ${pct(metrics.alphaVsBenchmark)}.`,
+  });
+
+  claims.push({
+    claim: "Downside and tail risk are contained over the horizon.",
+    assessment:
+      Math.abs(metrics.maxDrawdown) < 0.3 &&
+      regime.label !== "Crisis Volatility" &&
+      regime.label !== "High Volatility"
+        ? "Supported"
+        : Math.abs(metrics.maxDrawdown) > 0.45 || regime.label === "Crisis Volatility"
+          ? "Unsupported"
+          : "Inconclusive",
+    rationale: `Max drawdown ${pct(metrics.maxDrawdown)}, ${regime.label.toLowerCase()}, 95% VaR ${pct(metrics.valueAtRisk95)}.`,
+  });
+
+  return {
+    claims,
+    verdictRationale: verdictSummaryText,
+    source: "deterministic",
+  };
+}
+
 export function verdictSummary(
   req: StressTestRequest,
   label: VerdictLabel,
   metrics: Metrics,
   simulations: Simulations,
   regime: VolatilityRegime,
-  score: number,
+  direction: ThesisDirection,
 ): string {
-  const directional =
+  const stanceClause =
+    direction.extremeClaim
+      ? `The thesis implies a near-total loss in ${req.ticker}, an outcome the models assign essentially no probability over ${req.horizon.toLowerCase()}.`
+      : direction.stance === "bearish"
+        ? `Read as a bearish thesis (${req.ticker} declines or underperforms ${req.benchmark}), it requires weak quantitative evidence.`
+        : direction.stance === "neutral"
+          ? `Read as a relative-performance thesis (${req.ticker} versus ${req.benchmark}), the directional read is:`
+          : `As a bullish thesis (${req.ticker} outperforms ${req.benchmark}), the directional read is:`;
+
+  const bullishEvidence =
     metrics.excessReturn > 0 && simulations.probabilityOutperformBenchmark > 0.5
-      ? "the historical and simulated evidence leans in favor of the thesis"
+      ? "the historical and simulated evidence is bullish on the stock"
       : metrics.excessReturn < 0 && simulations.probabilityOutperformBenchmark < 0.5
-        ? "the historical and simulated evidence leans against the thesis"
-        : "the evidence is genuinely mixed";
+        ? "the historical and simulated evidence is bearish on the stock"
+        : "the stock's evidence is genuinely mixed";
 
   const riskClause =
     regime.label === "Crisis Volatility" || regime.label === "High Volatility"
-      ? ` The thesis remains exposed to ${regime.label.toLowerCase()} and left-tail risk (modeled 5th-percentile return of ${pct(simulations.percentile5)}).`
-      : ` Tail risk is contained for now, with a modeled 5th-percentile return of ${pct(simulations.percentile5)}.`;
+      ? ` Tail risk is elevated (${regime.label.toLowerCase()}; modeled 5th-percentile return ${pct(simulations.percentile5)}).`
+      : ` Tail risk is contained for now (modeled 5th-percentile return ${pct(simulations.percentile5)}).`;
 
   const strength =
     label === "Supported"
-      ? "The risk-adjusted profile is strong enough to treat the directional conclusion as well-grounded, though not certain."
+      ? "The evidence is strong enough to treat the thesis as well-grounded, though not certain."
       : label === "Mixed"
-        ? "The risk-adjusted profile is not strong enough to treat the conclusion as definitive."
+        ? "The evidence is not strong enough to treat the thesis as definitive."
         : label === "Weak"
-          ? "The supporting evidence is thin and the conclusion should be treated with caution."
-          : "The quantitative evidence largely contradicts the stated thesis.";
+          ? "The supporting evidence for the thesis is thin and it should be treated with caution."
+          : "The quantitative evidence largely contradicts the thesis as stated.";
 
-  return `On a Quant Support Score of ${score.toFixed(0)}/100 (${label}), ${directional} that ${req.ticker} will perform as described versus ${req.benchmark} over ${req.horizon.toLowerCase()}.${riskClause} ${strength}`;
+  return `On a thesis-support score of ${direction.thesisScore.toFixed(0)}/100 (${label}), ${stanceClause} ${bullishEvidence}.${riskClause} ${strength}`;
 }

@@ -73,7 +73,7 @@ export default function Home() {
               <Activity className="h-5 w-5" />
             </div>
             <span className="text-lg font-semibold tracking-tight">
-              Thesis<span className="text-emerald-400">Break</span>
+              Stochas<span className="text-emerald-400">tick</span>
             </span>
           </div>
           <span className="hidden text-xs text-muted-foreground sm:block">
@@ -99,16 +99,26 @@ export default function Home() {
                 </span>
               </h1>
               <p className="mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground">
-                ThesisBreak is an autonomous quant research worker that tests your thesis against
-                price behavior, volatility, benchmark-relative performance, tail risk, and stochastic
-                forward simulations. You assign the work — it tries to prove your thesis wrong and
-                returns an institutional-style research memo.
+                Stochastick is an autonomous quant research worker you hire for one job: testing your
+                thesis against price behavior, volatility, benchmark-relative performance, tail risk,
+                and stochastic forward simulations. You assign the work — it tries to prove your thesis
+                wrong and returns an institutional-style research memo in seconds.
               </p>
               <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
                 <Feature icon={<BarChart3 className="h-4 w-4" />} text="20+ computed quant metrics" />
-                <Feature icon={<Activity className="h-4 w-4" />} text="10,000-path GBM simulation" />
+                <Feature icon={<Activity className="h-4 w-4" />} text="8-model forecast ensemble" />
                 <Feature icon={<ShieldCheck className="h-4 w-4" />} text="Transparent support score" />
               </div>
+
+              {/* Hireable-worker value prop — the "Agents for Hire" pitch. */}
+              <div className="mt-6 flex flex-wrap items-stretch gap-3">
+                <ValueStat label="Replaces" value="~3 hrs of analyst work" />
+                <ValueStat label="Human cost / thesis" value="$150–450" />
+                <ValueStat label="Stochastick" value="~8 seconds" accent />
+              </div>
+              <p className="mt-3 text-xs text-muted-foreground">
+                Hire it on AgentBox · runs on GMI Cloud · no login, no paid data feed required.
+              </p>
             </motion.div>
 
             <div className="lg:pl-4">
@@ -151,6 +161,34 @@ function Feature({ icon, text }: { icon: React.ReactNode; text: string }) {
     <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs text-muted-foreground">
       <span className="text-emerald-300">{icon}</span>
       {text}
+    </div>
+  );
+}
+
+function ValueStat({
+  label,
+  value,
+  accent,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div
+      className={
+        "flex-1 rounded-xl border px-4 py-3 " +
+        (accent
+          ? "border-emerald-400/30 bg-emerald-400/10"
+          : "border-white/10 bg-white/[0.03]")
+      }
+    >
+      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
+        {label}
+      </p>
+      <p className={"mt-1 text-sm font-semibold " + (accent ? "text-emerald-300" : "text-foreground")}>
+        {value}
+      </p>
     </div>
   );
 }

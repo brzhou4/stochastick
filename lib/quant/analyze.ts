@@ -3,7 +3,7 @@
 // All math is deterministic; only the optional memo prose may come from an LLM.
 
 import { getPriceSeries, alignSeries } from "../market/data";
-import { phraseSummary } from "../llm/gmi";
+import { analyzeThesis } from "../llm/gmi";
 import {
   TRADING_DAYS_PER_YEAR,
   logReturns,
@@ -40,10 +40,12 @@ import {
 } from "./simulations";
 import { runForecast } from "./forecast";
 import { computeQuantSupportScore, verdictFromScore } from "./scoring";
+import { interpretThesis } from "./thesis";
 import {
   buildEvidence,
   buildAssumptionChecks,
   buildMethodology,
+  buildThesisAnalysis,
   verdictSummary,
 } from "./report";
 import type {
@@ -59,6 +61,7 @@ import type {
   PriceSummary,
   InstrumentPriceSummary,
   ForwardForecast,
+  ThesisDirection,
 } from "./types";
 
 const NUM_PATHS = 10000;
@@ -224,32 +227,59 @@ export async function runStressTest(
   );
   const forecast = roundForecast(forecastRaw);
 
-  // 7. Quant Support Score (transparent weighted formula).
+  // 7. Quant Support Score (transparent weighted formula). This measures BULLISH
+  // / long evidence — how strong the stock looks as an upside bet.
   const quantSupportScore = computeQuantSupportScore(metrics, simulations, regime);
-  const verdictLabel = verdictFromScore(quantSupportScore.score);
+
+  // 7b. Interpret the thesis and orient the verdict to what it actually CLAIMS.
+  // Threshold claims ("price > $0", "falls to $100", "to zero") are scored by the
+  // model probability the condition holds; directional claims orient the long
+  // evidence (bearish thesis ⇒ 100 − long score).
+  const thesisDirection: ThesisDirection = interpretThesis(
+    req.thesis,
+    tickerParams.startPrice,
+    tickerLog,
+    horizonDays,
+    quantSupportScore.score,
+    req.ticker,
+    req.benchmark,
+  );
+  const verdictLabel = verdictFromScore(thesisDirection.thesisScore);
 
   // 8. Deterministic evidence + checks + methodology.
   const { evidenceFor, evidenceAgainst } = buildEvidence(metrics, simulations, regime);
   const assumptionChecks = buildAssumptionChecks(metrics, regime, dates.length);
   const methodology = buildMethodology(req, dates.length);
 
-  // 9. Verdict summary (deterministic, optionally re-phrased by the LLM).
+  // 9. Verdict summary + thesis analysis. Deterministic by default; if an LLM is
+  // configured it decomposes the thesis into claims and explains the verdict
+  // (without changing the formula-driven verdict label).
   const deterministicSummary = verdictSummary(
     req,
     verdictLabel,
     metrics,
     simulations,
     regime,
-    quantSupportScore.score,
+    thesisDirection,
   );
-  const { summary, status: llmStatus } = await phraseSummary(
+  const deterministicAnalysis = buildThesisAnalysis(
     req,
     metrics,
     simulations,
     regime,
-    verdictLabel,
-    quantSupportScore.score,
+    thesisDirection,
     deterministicSummary,
+  );
+  const { summary, analysis: thesisAnalysis, status: llmStatus } = await analyzeThesis(
+    req,
+    metrics,
+    simulations,
+    regime,
+    forecast,
+    verdictLabel,
+    thesisDirection,
+    deterministicSummary,
+    deterministicAnalysis,
   );
 
   // 10. Series for charts + actual-price summary (so users can verify the data).
@@ -291,6 +321,8 @@ export async function runStressTest(
       summary,
       notFinancialAdvice: true,
     },
+    thesisDirection,
+    thesisAnalysis,
     metrics: roundMetrics(metrics),
     volatilityRegime: {
       ...regime,

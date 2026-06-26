@@ -63,6 +63,15 @@ describe("POST /api/stress-test", () => {
     expect(json.simulations.probabilityOutperformBenchmark).toBeGreaterThanOrEqual(0);
     expect(json.simulations.probabilityOutperformBenchmark).toBeLessThanOrEqual(1);
 
+    // Thesis analysis present with assessed claims and a verdict rationale.
+    expect(Array.isArray(json.thesisAnalysis.claims)).toBe(true);
+    expect(json.thesisAnalysis.claims.length).toBeGreaterThan(0);
+    for (const c of json.thesisAnalysis.claims) {
+      expect(["Supported", "Unsupported", "Inconclusive"]).toContain(c.assessment);
+    }
+    expect(typeof json.thesisAnalysis.verdictRationale).toBe("string");
+    expect(["llm", "deterministic"]).toContain(json.thesisAnalysis.source);
+
     // Multi-model forecast present and well-formed.
     expect(json.forecast.models.length).toBe(8);
     expect(json.forecast.percentile5).toBeLessThanOrEqual(json.forecast.percentile50);

@@ -140,6 +140,29 @@ export interface Verdict {
   notFinancialAdvice: true;
 }
 
+export type ThesisStance = "bullish" | "bearish" | "neutral";
+
+export interface ThesisDirection {
+  stance: ThesisStance;
+  extremeClaim: boolean;
+  thesisScore: number; // 0-100 support for the thesis as stated (orients the verdict)
+  note: string;
+}
+
+export type ClaimAssessment = "Supported" | "Unsupported" | "Inconclusive";
+
+export interface ThesisClaim {
+  claim: string;
+  assessment: ClaimAssessment;
+  rationale: string;
+}
+
+export interface ThesisAnalysis {
+  claims: ThesisClaim[];
+  verdictRationale: string;
+  source: "llm" | "deterministic";
+}
+
 export interface StressTestResponse {
   missionId: string;
   ticker: string;
@@ -150,6 +173,8 @@ export interface StressTestResponse {
   dataStatus: DataStatus;
   llmStatus: LlmStatus;
   verdict: Verdict;
+  thesisDirection: ThesisDirection;
+  thesisAnalysis: ThesisAnalysis;
   metrics: Metrics;
   volatilityRegime: VolatilityRegime;
   simulations: Simulations;

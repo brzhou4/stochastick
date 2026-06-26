@@ -29,7 +29,7 @@ import { cn, formatNumber, formatPercent, formatPrice, formatTime } from "@/lib/
 import type { StressTestResponse } from "@/lib/quant/types";
 
 const LLM_LABEL: Record<string, string> = {
-  used: "Memo phrased by LLM",
+  used: "Thesis analyzed by LLM",
   missing_env: "Deterministic memo (no LLM configured)",
   skipped_timeout: "Deterministic memo (LLM timed out)",
   error: "Deterministic memo (LLM unavailable)",
@@ -136,14 +136,31 @@ export function Report({
           </CardTitle>
         </CardHeader>
         <CardContent>
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+            <Badge className="border-white/10 bg-white/5 capitalize">
+              {data.thesisDirection.stance} thesis
+            </Badge>
+            {data.thesisDirection.extremeClaim ? (
+              <Badge className="border-rose-400/30 bg-rose-400/10 text-rose-300">
+                near-total-loss claim
+              </Badge>
+            ) : null}
+            <span className="text-muted-foreground">
+              thesis-support score {data.thesisDirection.thesisScore.toFixed(0)}/100
+            </span>
+          </div>
           <p className="text-pretty text-[15px] leading-relaxed text-foreground/90">
             {data.verdict.summary}
           </p>
+          <p className="mt-2 text-xs text-muted-foreground">{data.thesisDirection.note}</p>
           <p className="mt-3 text-xs text-muted-foreground">
             Research output only — not financial advice. No buy/sell/hold recommendation is implied.
           </p>
         </CardContent>
       </Card>
+
+      {/* Thesis analysis — claim-by-claim */}
+      <ThesisAnalysisSection data={data} />
 
       {/* Bento grid */}
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-6">
@@ -151,7 +168,7 @@ export function Report({
           className="col-span-2 lg:col-span-2 lg:row-span-2"
           title="Quant Support Score"
           value={`${data.quantSupportScore.score.toFixed(0)}/100`}
-          subtitle={data.quantSupportScore.label + " — formula-based, not AI confidence"}
+          subtitle={`${data.quantSupportScore.label} long-side strength — verdict orients this to your ${data.thesisDirection.stance} thesis`}
           colors={["#34d399", "#0ea5e9", "#10b981"]}
           delay={0.02}
           footer={
@@ -458,13 +475,64 @@ export function Report({
         <p className="mb-2 font-medium text-foreground/70">Compliance</p>
         <p>
           Research output only. Not financial advice. No trade execution. Historical performance does
-          not guarantee future results. Simulations are model-conditioned and uncertain. ThesisBreak
+          not guarantee future results. Simulations are model-conditioned and uncertain. Stochastick
           reasons only from computed price-based metrics and stochastic simulations — it does not read
           SEC filings, earnings transcripts, news, or analyst reports, and never issues buy, sell, or
           hold recommendations.
         </p>
       </div>
     </motion.div>
+  );
+}
+
+function ThesisAnalysisSection({ data }: { data: StressTestResponse }) {
+  const a = data.thesisAnalysis;
+  const tone: Record<string, string> = {
+    Supported: "border-emerald-400/30 bg-emerald-400/10 text-emerald-300",
+    Unsupported: "border-rose-400/30 bg-rose-400/10 text-rose-300",
+    Inconclusive: "border-amber-400/30 bg-amber-400/10 text-amber-300",
+  };
+  const dot: Record<string, string> = {
+    Supported: "bg-emerald-400",
+    Unsupported: "bg-rose-400",
+    Inconclusive: "bg-amber-400",
+  };
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <FileText className="h-4 w-4 text-emerald-300" />
+          Thesis analysis — claim by claim
+        </CardTitle>
+        <p className="text-xs text-muted-foreground">
+          {a.source === "llm"
+            ? "Your thesis decomposed and assessed against the quantitative evidence by the LLM (interpretation only — the verdict label remains formula-driven)."
+            : "Your thesis decomposed into testable claims and assessed from the computed metrics."}
+        </p>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <ul className="space-y-3">
+          {a.claims.map((c) => (
+            <li key={c.claim} className="flex items-start gap-3">
+              <span className={cn("mt-1 h-2 w-2 shrink-0 rounded-full", dot[c.assessment])} />
+              <div className="min-w-0 flex-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-sm text-foreground/90">{c.claim}</span>
+                  <Badge className={cn("text-[10px]", tone[c.assessment])}>{c.assessment}</Badge>
+                </div>
+                <p className="mt-0.5 text-xs text-muted-foreground">{c.rationale}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <div className="rounded-xl border border-white/10 bg-white/[0.02] px-4 py-3">
+          <p className="mb-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+            Why the verdict is {data.verdict.label}
+          </p>
+          <p className="text-sm leading-relaxed text-foreground/85">{a.verdictRationale}</p>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
