@@ -119,7 +119,7 @@ export default function Home() {
               <div className="grid grid-cols-3 gap-3">
                 <StatChip label="Quant metrics" value="20+" />
                 <StatChip label="Forecast models" value="8" />
-                <StatChip label="Est. runtime" value="~8 s" />
+                <StatChip label="Est. runtime" value="~8s" />
               </div>
             </motion.div>
 
