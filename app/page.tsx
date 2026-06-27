@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, AlertCircle } from "lucide-react";
+import { AlertCircle, Sigma } from "lucide-react";
 import { MissionForm } from "@/components/mission-form";
 import { MissionProgress } from "@/components/mission-progress";
 import { Report } from "@/components/report";
@@ -65,9 +65,9 @@ export default function Home() {
         <div className="mb-14 flex items-center justify-between border-b pb-5">
           <div className="flex items-center gap-2.5">
             <div className="panel-2 flex h-8 w-8 items-center justify-center rounded-md text-emerald-400">
-              <Activity className="h-4 w-4" />
+              <Sigma className="h-4 w-4" />
             </div>
-            <span className="text-[15px] font-semibold tracking-tight">
+            <span className="font-display text-[15px] font-semibold">
               Stochas<span className="text-emerald-400">tick</span>
             </span>
           </div>

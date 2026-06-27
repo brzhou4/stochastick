@@ -98,7 +98,7 @@ export function MissionForm({ onLaunch, disabled }: MissionFormProps) {
           <Crosshair className="h-5 w-5" />
         </div>
         <div>
-          <h2 className="text-xl font-semibold tracking-tight">New Research Mission</h2>
+          <h2 className="font-display text-xl font-semibold">New Research Mission</h2>
           <p className="text-sm text-muted-foreground">
             Assign the work. The quant worker stress-tests your thesis.
           </p>
@@ -180,17 +180,23 @@ export function MissionForm({ onLaunch, disabled }: MissionFormProps) {
             <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
               Risk Style
             </label>
-            <select
-              value={riskStyle}
-              onChange={(e) => setRiskStyle(e.target.value as RiskStyle)}
-              className={cn(fieldClass(), "h-[calc(100%-0px)] cursor-pointer appearance-none")}
-            >
+            <div className="flex flex-col gap-1.5">
               {RISK_STYLES.map((r) => (
-                <option key={r} value={r} className="bg-[#0f1115]">
+                <button
+                  type="button"
+                  key={r}
+                  onClick={() => setRiskStyle(r)}
+                  className={cn(
+                    "rounded border px-3 py-1.5 text-left text-xs transition-all",
+                    riskStyle === r
+                      ? "border-emerald-400/50 bg-emerald-400/10 text-emerald-200"
+                      : "border-white/10 bg-black/30 text-muted-foreground hover:border-white/20",
+                  )}
+                >
                   {r}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
         </div>
 
