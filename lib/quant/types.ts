@@ -166,6 +166,7 @@ export interface ThesisAnalysis {
 export interface StressTestResponse {
   missionId: string;
   ticker: string;
+  companyName: string; // resolved from ticker (e.g. "NVIDIA Corp." for NVDA)
   benchmark: string;
   thesis: string;
   horizon: Horizon;

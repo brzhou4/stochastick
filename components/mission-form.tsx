@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { ArrowRight, Crosshair, AlertCircle } from "lucide-react";
+import { ArrowRight, Crosshair, AlertCircle, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Horizon, RiskStyle, StressTestRequest } from "@/lib/quant/types";
@@ -18,6 +18,30 @@ const RISK_STYLES: RiskStyle[] = [
 
 const EXAMPLE_THESIS =
   "NVIDIA will outperform SPY over the next quarter because AI infrastructure demand remains strong.";
+
+const DIRECTION_RE =
+  /\b(outperform|underperform|rise|fall|increase|decrease|grow|drop|beat|exceed|go above|go below|go to|reach|hit|climb|decline|surge|crash|rally|gain|lose|soar|plunge|above|below|higher|lower)\b/i;
+
+const RATIONALE_RE =
+  /\b(because|since|as |due to|given|driven by|on the back of|following|amid|thanks to|supported by|underpinned by|catalyzed|backed by|in light of|reflecting|stemming from|on strong|on weak|as a result)\b/i;
+
+function thesisHint(thesis: string, ticker: string, horizon: Horizon): string | null {
+  const t = thesis.trim();
+  if (t.length < 12) return null;
+  const hasDirection = DIRECTION_RE.test(t);
+  if (!hasDirection) {
+    return (
+      `No directional claim detected. ` +
+      `Try: "${ticker || "TICKER"} will outperform SPY over the next ${horizon.toLowerCase()} ` +
+      `because [your reason]."`
+    );
+  }
+  if (RATIONALE_RE.test(t)) return null; // has both direction + rationale — fine
+  return (
+    `Tip: adding a rationale (e.g. "because...") makes the stress-test more precise ` +
+    `and helps the LLM assess whether the catalyst is supported by the data.`
+  );
+}
 
 interface MissionFormProps {
   onLaunch: (req: StressTestRequest) => void;
@@ -38,6 +62,9 @@ export function MissionForm({ onLaunch, disabled }: MissionFormProps) {
   const [horizon, setHorizon] = useState<Horizon>("1 Quarter");
   const [riskStyle, setRiskStyle] = useState<RiskStyle>("Momentum");
   const [errors, setErrors] = useState<string[]>([]);
+  const [thesisTouched, setThesisTouched] = useState(false);
+
+  const hint = thesisTouched ? thesisHint(thesis, ticker, horizon) : null;
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -112,11 +139,18 @@ export function MissionForm({ onLaunch, disabled }: MissionFormProps) {
           </label>
           <textarea
             value={thesis}
-            onChange={(e) => setThesis(e.target.value)}
+            onChange={(e) => { setThesis(e.target.value); setThesisTouched(true); }}
+            onBlur={() => setThesisTouched(true)}
             rows={3}
             placeholder={EXAMPLE_THESIS}
             className={cn(fieldClass(), "resize-none leading-relaxed")}
           />
+          {hint ? (
+            <div className="flex items-start gap-2 rounded-lg border border-amber-400/25 bg-amber-400/8 px-3 py-2 text-xs text-amber-200/90">
+              <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-amber-400" />
+              {hint}
+            </div>
+          ) : null}
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">

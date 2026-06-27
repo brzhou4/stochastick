@@ -5,18 +5,18 @@ import {
   Activity,
   AlertTriangle,
   ArrowLeft,
-  Brain,
+  BarChart2,
   CheckCircle2,
   Database,
   FileText,
   Gauge,
   Info,
   Layers,
+  Minus,
+  Plus,
   ShieldAlert,
-  Sparkles,
-  ThumbsDown,
-  ThumbsUp,
   TrendingDown,
+  TrendingUp,
   XCircle,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,7 +60,12 @@ export function Report({
           <div className="flex flex-wrap items-start justify-between gap-4">
             <div className="space-y-3">
               <div className="flex flex-wrap items-center gap-3">
-                <h1 className="tabular text-3xl font-bold tracking-tight">{data.ticker}</h1>
+                <div>
+                  <h1 className="tabular text-3xl font-bold tracking-tight">{data.ticker}</h1>
+                  {data.companyName && data.companyName !== data.ticker ? (
+                    <p className="text-xs text-muted-foreground">{data.companyName}</p>
+                  ) : null}
+                </div>
                 <span className="tabular text-2xl font-semibold text-emerald-300">
                   {formatPrice(pt.lastClose)}
                 </span>
@@ -106,7 +111,7 @@ export function Report({
                   {data.dataStatus === "live" ? "Live market data" : "Fallback data"}
                 </Badge>
                 <Badge className="border-white/10 bg-white/5">
-                  <Sparkles className="h-3 w-3" />
+                  <FileText className="h-3 w-3" />
                   {LLM_LABEL[data.llmStatus] ?? data.llmStatus}
                 </Badge>
                 <span className="tabular">Generated {formatTime(data.generatedAt)}</span>
@@ -296,7 +301,7 @@ export function Report({
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-emerald-300" />
+            <Activity className="h-4 w-4 text-emerald-300" />
             Stochastic simulation — {s.model} ({s.paths.toLocaleString()} paths)
           </CardTitle>
         </CardHeader>
@@ -373,14 +378,14 @@ export function Report({
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
         <EvidenceCard
           title="Evidence for the thesis"
-          icon={<ThumbsUp className="h-4 w-4 text-emerald-300" />}
+          icon={<Plus className="h-4 w-4 text-emerald-300" />}
           items={data.evidenceFor}
           tone="for"
           empty="No supporting evidence met the quantitative thresholds."
         />
         <EvidenceCard
           title="Evidence against the thesis"
-          icon={<ThumbsDown className="h-4 w-4 text-rose-300" />}
+          icon={<Minus className="h-4 w-4 text-rose-300" />}
           items={data.evidenceAgainst}
           tone="against"
           empty="No contradicting evidence met the quantitative thresholds."
@@ -548,7 +553,7 @@ function ForecastSection({ data }: { data: StressTestResponse }) {
     <Card>
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <Brain className="h-4 w-4 text-emerald-300" />
+          <BarChart2 className="h-4 w-4 text-emerald-300" />
           Forward predictions — {f.models.length}-model ensemble
         </CardTitle>
         <p className="text-xs text-muted-foreground">

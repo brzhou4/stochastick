@@ -66,9 +66,11 @@ function buildUserPrompt(
   forecast: ForwardForecast,
   verdict: VerdictLabel,
   direction: ThesisDirection,
+  companyName?: string,
 ): string {
   const facts = {
     ticker: req.ticker,
+    companyName: companyName ?? req.ticker,
     benchmark: req.benchmark,
     horizon: req.horizon,
     riskStyle: req.riskStyle,
@@ -156,6 +158,7 @@ export async function analyzeThesis(
   direction: ThesisDirection,
   deterministicSummary: string,
   fallback: ThesisAnalysis,
+  companyName?: string,
   timeoutMs = 9000,
 ): Promise<ThesisAnalysisResult> {
   const config = getLlmConfig();
@@ -187,7 +190,7 @@ export async function analyzeThesis(
           { role: "system", content: SYSTEM_PROMPT },
           {
             role: "user",
-            content: buildUserPrompt(req, metrics, simulations, regime, forecast, verdict, direction),
+            content: buildUserPrompt(req, metrics, simulations, regime, forecast, verdict, direction, companyName),
           },
         ],
       }),

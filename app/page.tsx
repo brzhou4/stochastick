@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { motion } from "framer-motion";
-import { Activity, AlertCircle, BarChart3, ShieldCheck } from "lucide-react";
+import { Activity, AlertCircle } from "lucide-react";
 import { MissionForm } from "@/components/mission-form";
 import { MissionProgress } from "@/components/mission-progress";
 import { Report } from "@/components/report";
@@ -58,7 +58,6 @@ export default function Home() {
 
   return (
     <main className="bg-grid relative min-h-screen">
-      {/* Static vignette — no animated gradients. */}
       <div className="pointer-events-none fixed inset-x-0 top-0 -z-10 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent" />
 
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 sm:py-16">
@@ -76,43 +75,55 @@ export default function Home() {
         </div>
 
         {phase === "idle" ? (
-          <div className="grid grid-cols-1 gap-10 lg:grid-cols-2 lg:items-center">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-start">
             <motion.div
               initial={{ opacity: 0, y: 12 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.45 }}
+              className="space-y-4"
             >
-              <div className="label mb-5 inline-flex items-center gap-2 border-b pb-1">
-                Investment Thesis Stress-Test
-              </div>
-              <h1 className="text-balance text-4xl font-semibold leading-[1.08] tracking-tight sm:text-5xl">
-                Stress-test an investment thesis{" "}
-                <span className="text-emerald-400">before the market does.</span>
-              </h1>
-              <p className="mt-5 max-w-lg text-pretty text-[15px] leading-relaxed text-muted-foreground">
-                Stochastick is an autonomous quant research worker you hire for one job: testing your
-                thesis against price behavior, volatility, benchmark-relative performance, tail risk,
-                and stochastic forward simulations. You assign the work — it tries to prove your thesis
-                wrong and returns an institutional-style research memo in seconds.
-              </p>
-              <div className="mt-8 grid grid-cols-1 gap-3 sm:grid-cols-3">
-                <Feature icon={<BarChart3 className="h-4 w-4" />} text="20+ computed quant metrics" />
-                <Feature icon={<Activity className="h-4 w-4" />} text="8-model forecast ensemble" />
-                <Feature icon={<ShieldCheck className="h-4 w-4" />} text="Transparent support score" />
+              {/* Brief */}
+              <div className="panel rounded-lg p-6">
+                <p className="label mb-3">What it does</p>
+                <p className="text-sm leading-relaxed text-muted-foreground">
+                  Enter a ticker and an investment thesis. Stochastick fetches up to 2 years of
+                  live price data, computes 20+ quant metrics, runs stochastic simulations, and
+                  returns a scored verdict — <span className="text-foreground/80">Supported</span>,{" "}
+                  <span className="text-foreground/80">Mixed</span>,{" "}
+                  <span className="text-foreground/80">Weak</span>, or{" "}
+                  <span className="text-foreground/80">Contradicted</span> — in roughly 8 seconds.
+                </p>
               </div>
 
-              {/* Hireable-worker value prop — the "Agents for Hire" pitch. */}
-              <div className="mt-6 flex flex-wrap items-stretch gap-3">
-                <ValueStat label="Replaces" value="~3 hrs of analyst work" />
-                <ValueStat label="Human cost / thesis" value="$150–450" />
-                <ValueStat label="Stochastick" value="~8 seconds" accent />
+              {/* Methodology spec sheet */}
+              <div className="panel rounded-lg p-6">
+                <p className="label mb-4">Methodology</p>
+                <div className="space-y-2.5">
+                  <SpecRow label="Data" value="Daily adj. close · 4 live sources · 2y lookback" />
+                  <SpecRow label="Returns" value="Log returns · 252-day annualized" />
+                  <SpecRow
+                    label="Risk metrics"
+                    value="Sharpe · Sortino · Calmar · Treynor · IR · VaR95 · ES95 · β · α"
+                  />
+                  <SpecRow label="Regime" value="20-day vs 252-day realized vol ratio" />
+                  <SpecRow label="Simulation" value="GBM · 10,000 deterministic-seeded paths" />
+                  <SpecRow
+                    label="Forecast"
+                    value="8-model ensemble: GBM · Student-t · GARCH(1,1) · Jump-Diffusion · Bootstrap · ARIMA(2,1) · MLP · OU SDE"
+                  />
+                  <SpecRow label="Verdict" value="Weighted quant support score (0–100) · thesis-oriented" />
+                </div>
               </div>
-              <p className="mt-3 text-xs text-muted-foreground">
-                Hire it on AgentBox · runs on GMI Cloud · no login, no paid data feed required.
-              </p>
+
+              {/* Stats row */}
+              <div className="grid grid-cols-3 gap-3">
+                <StatChip label="Quant metrics" value="20+" />
+                <StatChip label="Forecast models" value="8" />
+                <StatChip label="Est. runtime" value="~8 s" />
+              </div>
             </motion.div>
 
-            <div className="lg:pl-4">
+            <div>
               <MissionForm onLaunch={launch} />
             </div>
           </div>
@@ -128,7 +139,7 @@ export default function Home() {
               onFinished={() => setPhase("report")}
             />
             {error ? (
-              <div className="glass flex items-center justify-between gap-4 rounded-2xl border border-rose-500/30 p-5">
+              <div className="panel flex items-center justify-between gap-4 rounded-lg border-rose-500/30 p-5">
                 <div className="flex items-start gap-3 text-sm text-rose-200">
                   <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
                   {error}
@@ -147,39 +158,20 @@ export default function Home() {
   );
 }
 
-function Feature({ icon, text }: { icon: React.ReactNode; text: string }) {
+function SpecRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2.5 text-xs text-muted-foreground">
-      <span className="text-emerald-300">{icon}</span>
-      {text}
+    <div className="flex gap-3 text-xs">
+      <span className="w-24 shrink-0 text-muted-foreground">{label}</span>
+      <span className="tabular text-foreground/75">{value}</span>
     </div>
   );
 }
 
-function ValueStat({
-  label,
-  value,
-  accent,
-}: {
-  label: string;
-  value: string;
-  accent?: boolean;
-}) {
+function StatChip({ label, value }: { label: string; value: string }) {
   return (
-    <div
-      className={
-        "flex-1 rounded-xl border px-4 py-3 " +
-        (accent
-          ? "border-emerald-400/30 bg-emerald-400/10"
-          : "border-white/10 bg-white/[0.03]")
-      }
-    >
-      <p className="text-[10px] font-medium uppercase tracking-wider text-muted-foreground">
-        {label}
-      </p>
-      <p className={"mt-1 text-sm font-semibold " + (accent ? "text-emerald-300" : "text-foreground")}>
-        {value}
-      </p>
+    <div className="panel rounded-lg px-4 py-3 text-center">
+      <p className="tabular text-xl font-semibold text-emerald-400">{value}</p>
+      <p className="mt-0.5 text-[10px] uppercase tracking-wider text-muted-foreground">{label}</p>
     </div>
   );
 }

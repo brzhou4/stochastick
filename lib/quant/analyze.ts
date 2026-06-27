@@ -3,6 +3,7 @@
 // All math is deterministic; only the optional memo prose may come from an LLM.
 
 import { getPriceSeries, alignSeries } from "../market/data";
+import { getCompanyName } from "../market/company";
 import { analyzeThesis } from "../llm/gmi";
 import {
   TRADING_DAYS_PER_YEAR,
@@ -110,10 +111,11 @@ export async function runStressTest(
   const warnings: string[] = [];
   const riskFree = getRiskFreeRate();
 
-  // 1. Market data (live or deterministic fallback).
-  const [tickerSeries, benchSeries] = await Promise.all([
+  // 1. Market data (live or deterministic fallback) + company name resolution.
+  const [tickerSeries, benchSeries, companyName] = await Promise.all([
     getPriceSeries(req.ticker),
     getPriceSeries(req.benchmark),
+    getCompanyName(req.ticker),
   ]);
   if (tickerSeries.warning) warnings.push(tickerSeries.warning);
   if (benchSeries.warning) warnings.push(benchSeries.warning);
@@ -263,6 +265,7 @@ export async function runStressTest(
     simulations,
     regime,
     thesisDirection,
+    companyName,
   );
   const deterministicAnalysis = buildThesisAnalysis(
     req,
@@ -282,6 +285,7 @@ export async function runStressTest(
     thesisDirection,
     deterministicSummary,
     deterministicAnalysis,
+    companyName,
   );
 
   // 10. Series for charts + actual-price summary (so users can verify the data).
@@ -312,6 +316,7 @@ export async function runStressTest(
   return {
     missionId: missionId(req),
     ticker: req.ticker,
+    companyName,
     benchmark: req.benchmark,
     thesis: req.thesis,
     horizon: req.horizon,

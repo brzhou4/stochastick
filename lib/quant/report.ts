@@ -272,15 +272,18 @@ export function verdictSummary(
   simulations: Simulations,
   regime: VolatilityRegime,
   direction: ThesisDirection,
+  companyName?: string,
 ): string {
+  const nameRef =
+    companyName && companyName !== req.ticker ? `${companyName} (${req.ticker})` : req.ticker;
   const stanceClause =
     direction.extremeClaim
-      ? `The thesis implies a near-total loss in ${req.ticker}, an outcome the models assign essentially no probability over ${req.horizon.toLowerCase()}.`
+      ? `The thesis implies a near-total loss in ${nameRef}, an outcome the models assign essentially no probability over ${req.horizon.toLowerCase()}.`
       : direction.stance === "bearish"
-        ? `Read as a bearish thesis (${req.ticker} declines or underperforms ${req.benchmark}), it requires weak quantitative evidence.`
+        ? `Read as a bearish thesis (${nameRef} declines or underperforms ${req.benchmark}), it requires weak quantitative evidence.`
         : direction.stance === "neutral"
-          ? `Read as a relative-performance thesis (${req.ticker} versus ${req.benchmark}), the directional read is:`
-          : `As a bullish thesis (${req.ticker} outperforms ${req.benchmark}), the directional read is:`;
+          ? `Read as a relative-performance thesis (${nameRef} versus ${req.benchmark}), the directional read is:`
+          : `As a bullish thesis (${nameRef} outperforms ${req.benchmark}), the directional read is:`;
 
   const bullishEvidence =
     metrics.excessReturn > 0 && simulations.probabilityOutperformBenchmark > 0.5
